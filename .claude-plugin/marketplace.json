@@ -1,0 +1,18 @@
+{
+  "name": "radas",
+  "owner": {
+    "name": "YuhangSong"
+  },
+  "plugins": [
+    {
+      "name": "radas",
+      "source": "./plugins/radas",
+      "description": "Run large-scale experiments with Ray Tune and analyze results with pandas/seaborn"
+    },
+    {
+      "name": "ask-user",
+      "source": "./plugins/ask-user",
+      "description": "Interact with the user via email when away from the terminal"
+    }
+  ]
+}

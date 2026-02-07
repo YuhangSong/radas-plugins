@@ -1,0 +1,8 @@
+{
+  "name": "ask-user",
+  "version": "0.1.0",
+  "description": "Interact with the user via email when away from the terminal",
+  "author": {
+    "name": "yuhang"
+  }
+}

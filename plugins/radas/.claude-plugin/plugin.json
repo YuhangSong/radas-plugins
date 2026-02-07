@@ -1,0 +1,8 @@
+{
+  "name": "radas",
+  "version": "0.1.0",
+  "description": "Run large-scale experiments with Ray Tune and analyze results with pandas/seaborn",
+  "author": {
+    "name": "yuhang"
+  }
+}
