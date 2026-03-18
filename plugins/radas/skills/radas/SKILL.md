@@ -61,13 +61,30 @@ from radas.clusters import get_cluster_availability
 print(get_cluster_availability())
 ```
 
-**For GPU experiments**: Use a GPU cluster (e.g., `atol-gpu-5090`). Your code MUST explicitly use GPU and verify it's not falling back to CPU.
+**For GPU experiments**: Use a GPU cluster (e.g., `atol-gpu-5090`).
+
+**⚠️ CRITICAL GPU REQUIREMENT**: Submitting to a GPU cluster does NOT automatically use GPU. Your trainable code MUST explicitly move tensors and models to GPU. Common mistake: code runs on CPU despite being on a GPU cluster because `.to(device)` / `.cuda()` calls are missing.
+
+**GPU trainable template** (PyTorch):
+```python
+def trainable(config):
+    import torch
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    assert device.type == "cuda", f"Expected GPU but got {device}"
+
+    model = MyModel().to(device)
+    data = data_tensor.to(device)     # ALL tensors must be on device
+    labels = labels_tensor.to(device)
+    # ... training loop ...
+```
 
 **For CPU-only experiments**: Use a CPU cluster (e.g., `gcp-cpu`, `aws-cpu`).
 
 ### Resource Allocation with cpu_per_trial
 
-`cpu_per_trial` controls resource allocation per trial (default: `1`). Each CPU unit corresponds to a proportional amount of GPU, memory, and other cluster resources.
+`cpu_per_trial` controls resource allocation per trial (default: `1`). On GPU clusters, **GPU is automatically allocated** proportional to CPU — you do NOT need a separate `gpu_per_trial` parameter. For example, on a cluster with 8 GPUs and 8 CPUs per node, `cpu_per_trial=1` allocates 1 GPU per trial.
+
+**Important**: GPU resources ARE allocated automatically, but your code must still explicitly USE the GPU (see GPU trainable template above). Resource allocation ≠ code execution on GPU.
 
 **Auto-scaling on OOM**: If OOM or resource exhaustion occurs, `run_experiment` automatically doubles `cpu_per_trial` and retries. For future runs with similar resource needs, start with the auto-increased value to skip the retry process.
 
