@@ -80,13 +80,22 @@ def trainable(config):
 
 **For CPU-only experiments**: Use a CPU cluster (e.g., `gcp-cpu`, `aws-cpu`).
 
-### Resource Allocation with cpu_per_trial
+### Resource Allocation with resources_per_trial
 
-`cpu_per_trial` controls resource allocation per trial (default: `1`). On GPU clusters, **GPU is automatically allocated** proportional to CPU — you do NOT need a separate `gpu_per_trial` parameter. For example, on a cluster with 8 GPUs and 8 CPUs per node, `cpu_per_trial=1` allocates 1 GPU per trial.
+`resources_per_trial` specifies the resources each trial uses. **Both `cpu` and `gpu` must be specified explicitly**, and the CPU:GPU ratio must match the cluster's ratio.
 
-**Important**: GPU resources ARE allocated automatically, but your code must still explicitly USE the GPU (see GPU trainable template above). Resource allocation ≠ code execution on GPU.
+```python
+# atol-gpu-5090: 320 CPUs / 8 GPUs per node → ratio 40:1
+resources_per_trial={"cpu": 40, "gpu": 1}    # 1 GPU per trial
+resources_per_trial={"cpu": 80, "gpu": 2}    # 2 GPUs per trial
+resources_per_trial={"cpu": 10, "gpu": 0.25} # Quarter GPU per trial
+```
 
-**Auto-scaling on OOM**: If OOM or resource exhaustion occurs, `run_experiment` automatically doubles `cpu_per_trial` and retries. For future runs with similar resource needs, start with the auto-increased value to skip the retry process.
+If the ratio doesn't match, you'll get a clear error showing valid configurations.
+
+**Important**: Resource allocation ≠ code execution on GPU. Your code must still explicitly USE the GPU (see GPU trainable template above).
+
+**Note**: `cpu_per_trial` has been removed. If you use it, you'll get an error guiding you to use `resources_per_trial` instead.
 
 ### Experiment Lifecycle Management
 
