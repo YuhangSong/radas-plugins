@@ -1,5 +1,40 @@
 # radas Quick Examples
 
+## Script Template
+
+Use this pattern when you run `python -u run_experiment.py`. The examples below
+show the body you would place inside `main()` or inside a notebook cell.
+
+```python
+import asyncio
+
+from ray import tune
+from radas import run_experiment
+
+
+def trainable(config):
+    return {"score": config["a"] + config["b"]}
+
+
+async def main():
+    results = await run_experiment(
+        user_name="your_username",
+        experiment_name="grid-search-example",
+        trainable=trainable,
+        param_space={
+            "a": tune.grid_search([1, 2, 3]),
+            "b": tune.grid_search([10, 20]),
+        },
+        resources_per_trial={"cpu": 1, "gpu": 0},
+        run_choice="run",
+    )
+    print(results["df"])
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
 ## Example 1: Simple Grid Search
 
 ```python
@@ -17,6 +52,7 @@ results = await run_experiment(
         "a": tune.grid_search([1, 2, 3]),
         "b": tune.grid_search([10, 20]),
     },
+    resources_per_trial={"cpu": 1, "gpu": 0},
     run_choice="run",  # CRITICAL for non-interactive
 )
 print(results["df"])
@@ -32,6 +68,10 @@ from ray import tune
 def trainable(config):
     return {"accuracy": config["lr"] * config["epochs"]}
 
+
+def process_df_fn(df):
+    return df.pivot(index="config/lr", columns="config/epochs", values="accuracy")
+
 results = await run_experiment(
     user_name="your_username",
     experiment_name="plot-example",
@@ -40,11 +80,10 @@ results = await run_experiment(
         "lr": tune.grid_search([0.01, 0.1, 1.0]),
         "epochs": tune.grid_search([10, 50, 100]),
     },
+    resources_per_trial={"cpu": 1, "gpu": 0},
     run_choice="run",  # CRITICAL for non-interactive
+    process_df_fn=process_df_fn,
     plot_fn=sns.heatmap,
-    plot_kwargs=dict(
-        data=lambda df: df.pivot(index="config/lr", columns="config/epochs", values="accuracy"),
-    ),
 )
 ```
 
@@ -70,6 +109,7 @@ results = await run_experiment(
     ),
     trainable=trainable,
     run_with="cluster:atol-gpu-5090",
+    resources_per_trial={"cpu": 40, "gpu": 1},
     run_choice="run",  # CRITICAL for non-interactive
 )
 ```
@@ -95,6 +135,7 @@ results = await run_experiment(
         "lr": tune.loguniform(1e-4, 1e-1),
         "max_epochs": 100,
     },
+    resources_per_trial={"cpu": 1, "gpu": 0},
     run_choice="run",  # CRITICAL for non-interactive
     tuner_init_kwargs=dict(
         tune_config=tune.TuneConfig(
@@ -134,6 +175,7 @@ results = await run_experiment(
     param_space={
         "a": tune.grid_search([1, 2, 3, 4, 5]),
     },
+    resources_per_trial={"cpu": 1, "gpu": 0},
     run_choice="run",  # CRITICAL for non-interactive
     process_df_fn=process_df_fn,
     plot_fn=sns.barplot,
@@ -154,6 +196,7 @@ results = await run_experiment(
     experiment_name="reanalyze-example",
     trainable=trainable,
     param_space={"a": tune.grid_search([1, 2])},
+    resources_per_trial={"cpu": 1, "gpu": 0},
     run_choice="run",  # CRITICAL for non-interactive
 )
 
@@ -163,6 +206,7 @@ results = await run_experiment(
     experiment_name="reanalyze-example",  # Same name
     trainable=trainable,
     param_space={"a": tune.grid_search([1, 2])},
+    resources_per_trial={"cpu": 1, "gpu": 0},
     run_choice="run",  # CRITICAL for non-interactive
     dos=["analyze"],  # Only analyze, don't re-run
     plot_fn=sns.violinplot,
@@ -189,6 +233,7 @@ results = await run_experiment(
         "x": tune.uniform(-10, 10),
         "y": tune.uniform(-10, 10),
     },
+    resources_per_trial={"cpu": 1, "gpu": 0},
     run_choice="run",  # CRITICAL for non-interactive
     tuner_init_kwargs=dict(
         tune_config=tune.TuneConfig(
@@ -238,6 +283,7 @@ results = await run_experiment(
     experiment_name="email-notify-example",
     trainable=trainable,
     param_space={"a": tune.grid_search([1, 2, 3])},
+    resources_per_trial={"cpu": 1, "gpu": 0},
     run_choice="run",  # CRITICAL for non-interactive
     email_notification_to_address="your.email@example.com",
 )
@@ -264,6 +310,7 @@ results = await run_experiment(
     experiment_name="fig-example",
     trainable=trainable,
     param_space=config,
+    resources_per_trial={"cpu": 1, "gpu": 0},
     run_choice="run",  # CRITICAL for non-interactive
     plot_fn=sns.lineplot,
     plot_kwargs=dict(
@@ -295,6 +342,7 @@ results = await run_experiment(
     ),
     trainable=trainable,
     run_with="cluster:atol-gpu-5090",
+    resources_per_trial={"cpu": 40, "gpu": 1},
     run_choice="run",  # CRITICAL for non-interactive
 )
 ```

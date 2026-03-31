@@ -41,6 +41,12 @@ async def run_experiment(
 ) -> dict
 ```
 
+`run_experiment()` is async. In a Python script, wrap it in `async def main()`
+and call `asyncio.run(main())`; use top-level `await` only in notebooks or REPLs.
+
+For plotting, radas passes the processed DataFrame as `data` by default. If you
+set `plot_kwargs["data"]`, your value takes precedence.
+
 ## Return Value
 
 ```python
@@ -207,6 +213,8 @@ def trainable(config):
 
 ```python
 results = await run_experiment(
+    user_name="your_username",
+    experiment_name="wandb-example",
     trainable=trainable,
     param_space={
         "wandb": {
@@ -216,6 +224,8 @@ results = await run_experiment(
         },
         "a": tune.grid_search([1, 2]),
     },
+    resources_per_trial={"cpu": 1, "gpu": 0},
+    run_choice="run",
 )
 ```
 

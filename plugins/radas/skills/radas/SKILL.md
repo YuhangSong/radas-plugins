@@ -165,30 +165,44 @@ def trainable(config):
 
 ```python
 # run_experiment.py (main script)
-from radas import run_experiment
-from ray import tune
-from trainable import trainable  # MUST import from separate file
+import asyncio
+
 import seaborn as sns
+from ray import tune
+from radas import run_experiment
+from trainable import trainable  # MUST import from separate file
 
-results = await run_experiment(
-    user_name="your_username",
-    experiment_name="my-experiment",            # auto-prefixed with cwd
-    trainable=trainable,
-    param_space={
-        "a": tune.grid_search([1, 2, 3]),
-        "b": tune.grid_search([10, 20]),
-    },
-    run_with="cluster:atol-gpu-5090",           # ALWAYS use cluster
-    run_choice="run",                           # REQUIRED for non-interactive
-    plot_fn=sns.scatterplot,
-    plot_kwargs=dict(x="config/a", y="score", hue="config/b"),
-)
 
-# Access results
-df = results["df"]
-fig = results["fig"]
-fig.savefig("my_plot.png")
-best_result = results["tuner"].get_results().get_best_result(metric="score", mode="max")
+async def main():
+    results = await run_experiment(
+        user_name="your_username",
+        experiment_name="my-experiment",            # auto-prefixed with cwd
+        trainable=trainable,
+        param_space={
+            "a": tune.grid_search([1, 2, 3]),
+            "b": tune.grid_search([10, 20]),
+        },
+        run_with="cluster:atol-gpu-5090",           # ALWAYS use cluster
+        resources_per_trial={"cpu": 40, "gpu": 1},
+        run_choice="run",                           # REQUIRED for non-interactive
+        plot_fn=sns.scatterplot,
+        plot_kwargs=dict(x="config/a", y="score", hue="config/b"),
+    )
+
+    # Access results
+    df = results["df"]
+    fig = results["fig"]
+    fig.savefig("my_plot.png")
+    best_result = results["tuner"].get_results().get_best_result(
+        metric="score",
+        mode="max",
+    )
+    print(df.head())
+    print(best_result)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ### 5. The `dos` Parameter
@@ -207,7 +221,8 @@ Use `tuner_init_kwargs` to configure search algorithms and schedulers:
 from ray.tune.search.optuna import OptunaSearch
 
 results = await run_experiment(
-    # ... other params ...
+    # ... other required params ...
+    resources_per_trial={"cpu": 1, "gpu": 0},
     tuner_init_kwargs=dict(
         tune_config=tune.TuneConfig(
             search_alg=OptunaSearch(),
@@ -238,6 +253,7 @@ python -u run_experiment.py
 
 **CRITICAL NOTES**:
 
+- `run_experiment()` is async, so scripts must use `asyncio.run(main())`
 - **DO NOT** use `sys.path.insert()` or run from a different directory
 - **ALWAYS** `cd` into the directory containing your scripts first
 
